@@ -18,6 +18,7 @@ Recommended to be used in conjunction with our [WordPress.org Plugin Deploy Acti
 
 * `SLUG` - defaults to the repository name, customizable in case your WordPress.org repository has a different slug or is capitalized differently.
 * `BUILD_DIR` - defaults to `false`. Set this flag to the directory where you build your plugins files into, then the action will copy and build the archive from that directory. Both absolute and relative paths are supported. The relative path if provided will be concatenated with the repository root directory. All files and folders in the build directory will be archived, `.distignore` or `.gitattributes` will be ignored.
+* `SVN_PLUGIN` - defaults to true. Set this flag to false if you dont want to pull down the WordPress.org svn plugin.
 
 ### Inputs
 
@@ -117,6 +118,42 @@ jobs:
       uses: 10up/action-wordpress-plugin-build-zip@stable
       with:
         retention-days: 1 # Optional; defaults to 5
+```
+
+### Build zip on pushes, attach zip file to release, don't push to WordPress.org SVN
+```yml
+name: Build release zip, attach to release, don't push to WordPress.org SVN
+
+on:
+  push:
+    branches:
+    - trunk
+
+jobs:
+  build:
+    name: Build release zip
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Build plugin # Remove or modify this step as needed
+      run: |
+        composer install --no-dev
+        npm install
+        npm run build
+
+    - name: Generate zip
+      uses: 10up/action-wordpress-plugin-build-zip@stable
+      env:
+        SVN_PLUGIN: false
+
+    - name: Upload to release
+      uses: JasonEtco/upload-to-release@master
+      with:
+        args: ${{ github.event.repository.name }}.zip application/zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Contributing
